@@ -1,5 +1,25 @@
 -module(utils).
--export([hash_file/1, hash_list/1, compare_hashes/2, file_size/1]).
+-export([hash_file/1, hash_list/1, compare_hashes/2, file_size/1, chunk_sizes/1]).
+
+%% Lookup chunk sizes via file size, returns {TotalChunks, ChunkSize, LastChunkSize}
+chunk_sizes(FileSize) ->
+    if
+        %% =< 1MB (100KB chunks)
+        FileSize > 0, FileSize =< 1024000 ->
+            {FileSize div 102400, 102400, FileSize rem 102400};
+        %% =< 10MB (100KB chunks)
+        FileSize > 1024000, FileSize =< 10240000 ->
+            {FileSize div 102400, 102400, FileSize rem 102400};
+        %% =< 100MB (10MB chunks)
+        FileSize > 10240000, FileSize =< 102400000 ->
+            {FileSize div 10240000, 10240000, FileSize rem 10240000};
+        %% =< 1000MB (10MB chunks)
+        FileSize > 102400000, FileSize =< 1024000000 ->
+            {FileSize div 10240000, 10240000, FileSize rem 10240000};
+        %% > 1000MB (10MB chunks)
+        true ->
+            {FileSize div 10240000, 10240000, FileSize rem 10240000}
+    end.
 
 %% Hash file
 hash_file(Filename) ->
@@ -21,10 +41,11 @@ hash_list(Filename) ->
     Size = file_size(Filename),
     
     %% Compute chunk size
-    ChunkSize = Size div 10,
+    {TotalChunks, ChunkSize, LastChunkSize} = chunk_sizes(Size),
+    %ChunkSize = Size div 10,
     
     %% Last chunk size
-    LastChunkSize = ChunkSize + (Size - (ChunkSize*10)),
+    %LastChunkSize = ChunkSize + (Size - (ChunkSize*10)),
     io:format("ChunkSize: ~p, LastChunkSize: ~p~n", [ChunkSize, LastChunkSize]),
     
     %% Generate hashes for each chunk
