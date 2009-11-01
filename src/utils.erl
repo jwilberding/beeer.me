@@ -39,17 +39,19 @@ hash_file(Filename) ->
 hash_list(Filename) ->
     %% Get file size in bytes
     Size = file_size(Filename),
+
+    case Size of
+        -1 ->
+            {error, nofile};
+        Size ->
+            %% Compute chunk size
+            {TotalChunks, ChunkSize, LastChunkSize} = chunk_sizes(Size),
+             
+            io:format("TotalChunks: ~p, ChunkSize: ~p, LastChunkSize: ~p~n", [TotalChunks, ChunkSize, LastChunkSize]),
     
-    %% Compute chunk size
-    {TotalChunks, ChunkSize, LastChunkSize} = chunk_sizes(Size),
-    %ChunkSize = Size div 10,
-    
-    %% Last chunk size
-    %LastChunkSize = ChunkSize + (Size - (ChunkSize*10)),
-    io:format("TotalChunks: ~p, ChunkSize: ~p, LastChunkSize: ~p~n", [TotalChunks, ChunkSize, LastChunkSize]),
-    
-    %% Generate hashes for each chunk
-    hash_file(Filename, TotalChunks, ChunkSize, LastChunkSize).
+            %% Generate hashes for each chunk
+            hash_file(Filename, TotalChunks, ChunkSize, LastChunkSize)
+    end.
 
 %% Hash file
 hash_file(Filename, TotalChunks, ChunkSize, LastChunkSize) ->
@@ -81,7 +83,7 @@ file_size(Filename) ->
         {ok, {_,Size,_,_,_,_,_,_,_,_,_,_,_,_}} ->
             Size;
         _ ->
-            io:format("Could not read file size: ~s~n", [Filename])
+            -1
     end.
 
 start(Dir) -> 
