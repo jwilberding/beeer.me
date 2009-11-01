@@ -1,4 +1,4 @@
--module(utils).
+ -module(utils).
 -export([hash_file/1, hash_list/1, compare_hashes/2, file_size/1, chunk_sizes/1]).
 
 %% Lookup chunk sizes via file size, returns {TotalChunks, ChunkSize, LastChunkSize}
@@ -46,21 +46,21 @@ hash_list(Filename) ->
     
     %% Last chunk size
     %LastChunkSize = ChunkSize + (Size - (ChunkSize*10)),
-    io:format("ChunkSize: ~p, LastChunkSize: ~p~n", [ChunkSize, LastChunkSize]),
+    io:format("TotalChunks: ~p, ChunkSize: ~p, LastChunkSize: ~p~n", [TotalChunks, ChunkSize, LastChunkSize]),
     
     %% Generate hashes for each chunk
-    hash_file(Filename, ChunkSize, LastChunkSize).
+    hash_file(Filename, TotalChunks, ChunkSize, LastChunkSize).
 
 %% Hash file
-hash_file(Filename, ChunkSize, LastChunkSize) ->
+hash_file(Filename, TotalChunks, ChunkSize, LastChunkSize) ->
     case file:open( Filename, [read]) of
         {ok,File} ->
             HashList = lists:map(fun(X) ->
                               {ok,[Chunk]} = file:pread( File, [{X*ChunkSize,ChunkSize}]),
                               {X,crypto:md5(Chunk)} end,
-                      lists:seq(0,8)),
-            {ok,[LastChunk]} = file:pread( File, [{9*ChunkSize,LastChunkSize}]),
-            LastHash = {9, crypto:md5(LastChunk)},
+                      lists:seq(0,TotalChunks-2)),
+            {ok,[LastChunk]} = file:pread( File, [{(TotalChunks-1)*ChunkSize,LastChunkSize}]),
+            LastHash = {TotalChunks-1, crypto:md5(LastChunk)},
             file:close(File),
             
             %% Put last hash in front, just because it is most efficient for list operations
@@ -72,6 +72,7 @@ hash_file(Filename, ChunkSize, LastChunkSize) ->
 %% Compare hashes from two lists to determine update list
 %% Use forward hashes, reverse hashes, and subhashes to determine exact parts of file that changed
 compare_hashes(List1, List2) ->
+    io:format("Chunks that need updated:~n"),
     List1 -- List2.
 
 %% Get file size in bytes
