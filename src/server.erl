@@ -25,5 +25,7 @@ loop(Socket) ->
 
 handle_data({?REQ_HASH_LIST, Filename}) ->
     utils:hash_list(Filename);
+handle_data({?NEW_FILE, Filename, Data}) ->
+    utils:write_file(Filename, Data);
 handle_data(_) ->
     "Unknown API Call".
