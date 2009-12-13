@@ -1,5 +1,5 @@
 -module(client).
--export([init/0, watch_dir/1, unwatch_dir/1, check_updates/0, request_hash_list/1]).
+-export([init/0, watch_dir/1, unwatch_dir/1, check_updates/0, request_hash_list/1, send_file/1]).
 
 -include("config.hrl").
 
@@ -42,19 +42,25 @@ request_hash_list(Filename) ->
 
 %% Sends a new file, we will do this when file does not exist on server
 %% TODO: Filename on server should be filename+hash to keep unique
+%% TODO: Make return friendly to front end, currently friendly to command line
 send_file(Filename) ->
     case gen_tcp:connect(?HOST, ?SERVER_PORT, [binary,{packet, 2}]) of
         {ok, Socket} ->
-            gen_tcp:send(Socket, term_to_binary({?NEW_FILE, Filename, readdata})),
+            io:format("Reading file~n"),
+            Data = utils:read_file(Filename),
+            io:format("Converting to term~n"),
+            TermData = term_to_binary({?NEW_FILE, Filename, Data}),
+            io:format("Sending data: ~p~n", [size(TermData)]),
+            ok = gen_tcp:send(Socket, TermData),
+            io:format("Sent~n"),
+            gen_tcp:close(Socket),
             Reply = binary_to_term(wait_reply()),
             case Reply of
-                {error, nowrite} ->
-                    HashList = "Error: Could not write file";
+                {error, Reason} ->
+                    Reason;
                 ok ->
                     ok
-            end,
-            gen_tcp:close(Socket),
-            HashList;
+            end;
         Error ->
             {error, Error}
     end.

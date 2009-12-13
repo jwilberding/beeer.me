@@ -1,5 +1,6 @@
  -module(utils).
 -export([hash_file/1, hash_list/1, compare_hashes/2, file_size/1, chunk_sizes/1]).
+-export([read_file/1, write_file/2]).
 
 %% Lookup chunk sizes via file size, returns {TotalChunks, ChunkSize, LastChunkSize}
 chunk_sizes(FileSize) ->
@@ -194,3 +195,23 @@ check_eof(F) ->
 %  io:format("~s::~w~n", [FileName, Size]),
 %  print_file_listing(T).
 
+
+%% Read binary data from file, return data or print error and return null
+read_file(Filename) ->
+    case file:read_file(Filename) of
+        {error, Reason} ->
+            io:format("Error reading file: ~p~n~p~n", [Filename, Reason]),
+            <<>>;
+        {ok, Data} ->
+            Data
+    end.
+
+%% Write binary data to file, return ok or error
+write_file(Filename, Data) ->
+    case file:write_file(Filename, Data) of
+        {error, Reason} ->
+            %%io:format("Error writing file: ~p~n~p~n", [Filename, Reason]),
+            {error, Reason};
+        ok ->
+            ok
+    end.
