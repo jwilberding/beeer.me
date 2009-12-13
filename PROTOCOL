@@ -1,0 +1,25 @@
+This is a very basic outline of how beeer.me will work. This will be replaced soon by a complete protocol description.
+
+There is a server a process and a client process. 
+
+Server Process:
+The server process is run in a central location on a server where you want all files to be store remotely. All interfactions with the server are through a client process.
+
+Client Process:
+The client process is a continual process that runs on a user's machine. It will have the following basic functions.
+
+watch directory: adds directory to list of files to sync to server process
+unwatch directory: removes directory from being synced(deletes no files locally)
+send file: uploads a file if it is in the watch list and does not exist on server
+update file remotely: updates a file on remote server using delta compression from local copy
+update file locally: updates a local file froma  server copy using delta compression
+request hash list: requests the hash list of a file on server to determine which parts need transferring
+
+All updates are atomic in order of modification date. To illustrate this, let's have the following example.
+
+We have 2 clients(c1, c2), and a server(s1) running.
+
+c1 has the software turned on and edits "test.txt" with a timestamp of 10:00.00. This change automatically gets updated to the server s1
+
+c2 is not running the software currently, and has edited "test.txt" but 10 minutes earlier at 9:50.00, c2 20 minute later decides to turn on the software to sync their file. Since the latest copy of the file according to timestamps is the one on the server from c1, it will be downloaded and replace the current "test.txt". However, before this happens, a diff record is still created and sent to the server so the file can still be restored.
+
